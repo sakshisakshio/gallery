@@ -308,6 +308,14 @@ button:focus-visible,[role="button"]:focus-visible,input:focus-visible{
 const PHOTOS = [
   'pic/photo_2026-09-12_20-29-06.jpg',
   'pic/photo_2026-09-12_20-29-14.jpg',
+  'pic/WhatsApp Image 2026-09-14 at 5.57.25 PM (1).jpeg',
+  'pic/WhatsApp Image 2026-09-14 at 5.57.25 PM.jpeg',
+  'pic/WhatsApp Image 2026-09-14 at 5.57.26 PM (1).jpeg',
+  'pic/WhatsApp Image 2026-09-14 at 5.57.26 PM.jpeg',
+  'pic/WhatsApp Image 2026-09-14 at 8.33.28 PM (1).jpeg',
+  'pic/WhatsApp Image 2026-09-14 at 8.33.28 PM.jpeg',
+  'pic/WhatsApp Image 2026-09-14 at 8.34.26 PM (1).jpeg',
+  'pic/WhatsApp Image 2026-09-14 at 8.34.26 PM.jpeg',
   'pic/pic1.jpg','pic/pic2.jpg','pic/pic3.jpg','pic/pic4.jpg',
   'pic/pic5.jpg','pic/pic5.png','pic/pic6.jpg','pic/pic7.jpg',
   'pic/pic8.jpg','pic/pic9.jpg','pic/pic10.jpg','pic/pic11.jpg',
@@ -612,9 +620,21 @@ function openVideo(src){
   lockBodyScroll();
   document.getElementById('video-modal').classList.add('show');
   const v = document.getElementById('vid-el');
-  v.src = src;
-  v.currentTime = 0;
-  v.play().catch(()=>{});
+  v.pause();
+  v.removeAttribute('src');
+  v.load();
+  v.src = encodeURI(src);
+  v.load();
+  v.addEventListener('loadedmetadata', () => {
+    v.currentTime = 0;
+    v.play().catch(() => {});
+  }, { once: true });
+  v.addEventListener('error', () => {
+    const message = v.error && v.error.code === MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED
+      ? 'This video format is not supported by your browser.'
+      : 'Unable to load this video.';
+    v.setAttribute('aria-label', message);
+  }, { once: true });
 }
 function closeVideo(){
   const v = document.getElementById('vid-el');
