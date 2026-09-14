@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>📷 Teri Yaadein — Gallery</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,700&family=Josefin+Sans:wght@300;400&display=swap" rel="stylesheet">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#000000">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📷</text></svg>">
+<style>
+:root{
+  --ease-expo:cubic-bezier(0.16,1,0.3,1);
+  --ease-spring:cubic-bezier(0.34,1.56,0.64,1);
+  --sat: env(safe-area-inset-top, 0px);
+  --sar: env(safe-area-inset-right, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sal: env(safe-area-inset-left, 0px);
+  --pw-size: 120px;
+  --card-radius: 18px;
+  --soft-border: rgba(255,255,255,.08);
+  --soft-panel: rgba(255,255,255,.04);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none;}
+html,body{width:100%;height:100%;overscroll-behavior:none;overflow-x:hidden;}
+body{background:#000;font-family:'Josefin Sans',sans-serif;-webkit-user-select:none;user-select:none;}
+img,.pv-slide img{-webkit-user-select:none;user-select:none;}
+
+/* ── POLAROID WALL (GALLERY) ── */
+#polaroid-wall{position:fixed;inset:0;z-index:250;background:radial-gradient(circle at 50% -10%,#17153b 0%,#070713 34%,#000008 72%);opacity:1;overflow:hidden;}
+#pw-header{position:fixed;top:0;left:0;right:0;height:calc(64px + var(--sat));display:flex;align-items:flex-end;justify-content:center;padding:0 16px 12px;z-index:255;background:linear-gradient(180deg,rgba(0,0,8,.96) 28%,rgba(0,0,8,.76) 70%,transparent 100%);pointer-events:none;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);}
+#pw-header span{font-family:'Playfair Display',serif;font-style:italic;font-size:clamp(1rem,4vw,1.45rem);color:#fff;letter-spacing:4px;text-shadow:0 0 24px rgba(150,200,255,.65);}
+#pw-scroll{position:fixed;inset:0;overflow-y:auto;-webkit-overflow-scrolling:touch;z-index:252;padding:calc(78px + var(--sat)) max(12px, var(--sal)) calc(86px + var(--sab));scroll-behavior:smooth;overscroll-behavior-y:contain;contain:layout style;isolation:isolate;}
+
+/* Responsive grid: adapts smoothly from small phones to wide desktop screens. */
+#pw-video-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(min(100%, 220px),1fr));
+  gap:12px;
+  width:100%;
+  max-width:1400px;
+  margin:0 auto 18px;
+  align-items:start;
+}
+#pw-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(min(44vw, var(--pw-size)),1fr));
+  gap:12px;
+  width:100%;
+  max-width:1400px;
+  margin:0 auto;
+  align-items:start;
+}
+@media(min-width:600px){
+  #pw-grid{ grid-template-columns:repeat(auto-fit,minmax(min(32vw, var(--pw-size)),1fr)); }
+  #pw-video-grid{ grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); }
+}
+@media(min-width:900px){
+  #pw-grid{ gap:16px; }
+  #pw-video-grid{ gap:16px; }
+}
+@media(max-width:420px){
+  #pw-grid{ gap:10px; }
+  #pw-video-grid{ gap:10px; }
+}
+
+/* ── SIZE SLIDER (big / small photos) ── */
+#pw-size-ctrl{
+  position:fixed;
+  left:50%;
+  bottom:calc(18px + var(--sab));
+  transform:translateX(-50%);
+  z-index:256;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  background:rgba(10,8,24,.88);
+  border:1px solid rgba(150,210,255,.22);
+  border-radius:999px;
+  padding:9px 16px;
+  backdrop-filter:blur(6px);
+  -webkit-backdrop-filter:blur(6px);
+}
+#pw-size-ctrl .pw-size-icon{font-size:11px;opacity:.55;line-height:1;}
+#pw-size-ctrl .pw-size-icon.big{font-size:16px;}
+#pw-size-slider{
+  -webkit-appearance:none;appearance:none;
+  width:120px;height:3px;border-radius:3px;
+  background:rgba(150,210,255,.25);
+  outline:none;cursor:pointer;touch-action:manipulation;
+}
+#pw-size-slider::-webkit-slider-thumb{
+  -webkit-appearance:none;appearance:none;
+  width:18px;height:18px;border-radius:50%;
+  background:#fff;
+  box-shadow:0 0 10px rgba(120,210,255,.8);
+  cursor:pointer;
+  border:none;
+}
+#pw-size-slider::-moz-range-thumb{
+  width:18px;height:18px;border-radius:50%;
+  background:#fff;box-shadow:0 0 10px rgba(120,210,255,.8);
+  cursor:pointer;border:none;
+}
+
+.pw-photo-m{
+  transform-origin:center;
+  cursor:pointer;
+  /* skip layout/paint work for offscreen cards -> big perf win with many photos */
+  content-visibility:auto;
+  contain-intrinsic-size:220px 300px;
+}
+.pw-card-m{background:rgba(255,250,238,.97);border-radius:5px;padding:4px 4px 18px;box-shadow:0 5px 14px rgba(0,0,0,.6),0 2px 5px rgba(0,0,0,.4);position:relative;transition:transform .2s var(--ease-spring),box-shadow .2s ease;touch-action:manipulation;contain:layout paint;}
+.pw-card-m:active{transform:scale(.965);box-shadow:0 3px 8px rgba(0,0,0,.5);}
+.pw-card-m .img-box{position:relative;width:100%;aspect-ratio:.77;border-radius:1px;overflow:hidden;background:linear-gradient(135deg,rgba(255,255,255,.06),rgba(255,255,255,.02));}
+.pw-card-m img{display:block;width:100%;height:100%;object-fit:cover;object-position:center top;pointer-events:none;opacity:0;transform:scale(1.03);transition:opacity .35s ease,transform .35s ease;}
+.pw-card-m img.loaded{opacity:1;transform:scale(1);}
+.pw-tape-m{position:absolute;top:-8px;left:50%;transform:translateX(-50%);width:40px;height:13px;background:rgba(255,240,180,.22);border-radius:1px;}
+
+/* ── VIDEO CARDS ── */
+.pw-video-wrap{margin:0;}
+.pw-video-card{background:linear-gradient(145deg,rgba(255,255,255,.08),rgba(255,255,255,.025));border:1px solid var(--soft-border);border-radius:var(--card-radius);padding:10px;box-shadow:0 10px 22px rgba(0,0,0,.28);position:relative;cursor:pointer;transition:transform .2s var(--ease-spring),border-color .2s ease,box-shadow .2s ease;touch-action:manipulation;overflow:hidden;contain:layout paint;}
+.pw-video-card:active{transform:scale(.98);}
+.pw-video-thumb{width:100%;aspect-ratio:16/10;border-radius:14px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;border:1px solid rgba(255,255,255,.06);}
+.pw-video-thumb.accent-1{background:linear-gradient(135deg,#3a0f52 0%,#1a0330 65%,#0a0118 100%);}
+.pw-video-thumb.accent-2{background:linear-gradient(135deg,#0d2160 0%,#170a45 65%,#08041c 100%);}
+.pw-video-thumb.accent-3{background:linear-gradient(135deg,#0a3b4e 0%,#1a0f4a 65%,#080320 100%);}
+.pw-video-thumb::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 50% 45%,rgba(255,255,255,.08),transparent 60%);}
+.pw-play-btn{width:20%;aspect-ratio:1;min-width:34px;max-width:52px;border-radius:50%;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.3);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;position:relative;z-index:1;box-shadow:0 10px 20px rgba(0,0,0,.18);}
+.pw-play-btn svg{width:38%;height:38%;margin-left:2px;}
+.pw-video-label{margin-top:10px;padding:0 2px 2px;font-size:.78rem;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.86);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+
+@media(max-width:340px){
+  #pw-grid{ grid-template-columns:repeat(2,minmax(0,1fr)); }
+  #pw-video-grid{ grid-template-columns:repeat(2,minmax(0,1fr)); }
+}
+@media(max-width:380px){
+  #pw-header span{letter-spacing:2px;font-size:clamp(.8rem,4.2vw,1.2rem);}
+  #pw-size-ctrl{padding:7px 12px;gap:7px;}
+  #pw-size-slider{width:90px;}
+  .pw-video-card{padding:8px;}
+  .pw-video-label{font-size:.72rem;letter-spacing:.06em;}
+  #pw-scroll{padding-left:10px;padding-right:10px;}
+}
+
+/* ── LAPTOP / LARGE-SCREEN POLISH ── */
+@media(min-width:1440px){
+  #pw-video-grid,#pw-grid{ max-width:1600px; gap:20px; }
+  #pw-scroll{ padding-left:32px; padding-right:32px; }
+}
+#pw-scroll{scrollbar-width:thin;scrollbar-color:rgba(150,210,255,.35) transparent;}
+#pw-scroll::-webkit-scrollbar{width:8px;}
+#pw-scroll::-webkit-scrollbar-track{background:transparent;}
+#pw-scroll::-webkit-scrollbar-thumb{background:rgba(150,210,255,.3);border-radius:8px;}
+#pw-scroll::-webkit-scrollbar-thumb:hover{background:rgba(150,210,255,.5);}
+
+/* Mouse/trackpad only — this never fires on touch, so phones keep their tap-only feel */
+@media(hover:hover) and (pointer:fine){
+  .pw-card-m,.pw-video-card{transition:transform .25s var(--ease-spring),box-shadow .25s var(--ease-expo);}
+  .pw-card-m:hover:not(:active),.pw-video-card:hover:not(:active){transform:translateY(-4px) scale(1.015);box-shadow:0 14px 30px rgba(0,0,0,.55),0 4px 10px rgba(0,0,0,.4);}
+  .pw-video-card:hover .pw-play-btn{background:rgba(255,255,255,.24);transform:scale(1.08);}
+  .pv-tool-btn:hover,#pv-back:hover,#vid-back:hover{background:rgba(255,255,255,.16);}
+  #pw-size-slider{width:150px;}
+}
+
+/* Visible focus ring for keyboard/tab navigation (desktop) */
+button:focus-visible,[role="button"]:focus-visible,input:focus-visible{
+  outline:2px solid rgba(150,210,255,.85);
+  outline-offset:3px;
+  border-radius:4px;
+}
+#pw-size-slider:focus-visible{outline-offset:6px;}
+
+/* Short / landscape phones — rotated for bigger photos, so chrome shrinks to give room back */
+@media(max-height:430px) and (pointer:coarse){
+  #pw-header{height:calc(40px + var(--sat));padding-bottom:6px;}
+  #pw-header span{font-size:clamp(.8rem,3.4vw,1.05rem);letter-spacing:2px;}
+  #pw-scroll{padding:calc(48px + var(--sat)) 12px calc(58px + var(--sab));}
+  #pw-size-ctrl{bottom:calc(10px + var(--sab));padding:6px 12px;}
+}
+
+/* Respect OS-level reduced-motion preference */
+@media(prefers-reduced-motion:reduce){
+  *{animation-duration:.001ms !important;animation-iteration-count:1 !important;transition-duration:.001ms !important;}
+}
+
+/* ── INTRO SPLASH (Netflix-tudum style "Hii Darling" reveal) ── */
+#intro-splash{position:fixed;inset:0;z-index:9999;background:#000;display:flex;align-items:center;justify-content:center;overflow:hidden;}
+#intro-splash.exit{animation:introZoomOut .55s cubic-bezier(.6,0,1,1) forwards;}
+#intro-shakewrap{position:relative;width:100%;height:100%;display:flex;align-items:center;justify-content:center;animation:introShake .4s ease-out .58s;}
+
+/* converging bars */
+.intro-bar{position:absolute;top:0;bottom:0;width:10px;border-radius:5px;opacity:0;filter:blur(.3px);box-shadow:0 0 30px currentColor;}
+.intro-bar.b1{left:18%;color:#ff5fa0;background:linear-gradient(180deg,transparent,#ff5fa0,#ff5fa0,transparent);animation:introBarL .68s cubic-bezier(.6,0,.4,1) forwards;}
+.intro-bar.b2{left:50%;margin-left:-5px;color:#c084ff;background:linear-gradient(180deg,transparent,#c084ff,#c084ff,transparent);animation:introBarM .68s cubic-bezier(.6,0,.4,1) forwards .05s;}
+.intro-bar.b3{right:18%;color:#7fb8ff;background:linear-gradient(180deg,transparent,#7fb8ff,#7fb8ff,transparent);animation:introBarR .68s cubic-bezier(.6,0,.4,1) forwards;}
+@keyframes introBarL{0%{transform:scaleY(0) translateX(0);opacity:0;}35%{transform:scaleY(1) translateX(0);opacity:1;}100%{transform:scaleY(1) translateX(32vw) scaleX(.15);opacity:0;}}
+@keyframes introBarM{0%{transform:scaleY(0);opacity:0;}35%{transform:scaleY(1);opacity:1;}100%{transform:scaleY(1) scaleX(.15);opacity:0;}}
+@keyframes introBarR{0%{transform:scaleY(0) translateX(0);opacity:0;}35%{transform:scaleY(1) translateX(0);opacity:1;}100%{transform:scaleY(1) translateX(-32vw) scaleX(.15);opacity:0;}}
+
+/* flash + glow bloom at the moment of impact */
+#intro-flash{position:absolute;inset:0;background:radial-gradient(circle,#fff 0%,rgba(255,150,200,.7) 30%,transparent 70%);opacity:0;pointer-events:none;animation:introFlashPulse .32s ease-out forwards .6s;}
+@keyframes introFlashPulse{0%{opacity:0;}25%{opacity:1;}100%{opacity:0;}}
+
+/* text reveal, timed to land right after the flash */
+#intro-text{position:relative;z-index:2;font-family:'Playfair Display',serif;font-style:italic;font-weight:700;color:#fff;font-size:clamp(1.8rem,9vw,4.2rem);letter-spacing:2px;text-align:center;text-shadow:0 0 30px rgba(255,120,180,.85),0 0 70px rgba(150,80,255,.6);opacity:0;transform:scale(.15);animation:introPop .55s var(--ease-spring) forwards .68s;}
+#intro-text .intro-spark{font-size:.5em;vertical-align:middle;opacity:.85;}
+@keyframes introPop{0%{opacity:0;transform:scale(.15);}60%{opacity:1;transform:scale(1.16);}80%{transform:scale(.95);}100%{opacity:1;transform:scale(1);}}
+
+@keyframes introShake{0%,100%{transform:translate(0,0);}20%{transform:translate(-5px,3px);}40%{transform:translate(5px,-3px);}60%{transform:translate(-4px,2px);}80%{transform:translate(3px,-2px);}}
+
+/* floating hearts after the reveal */
+.intro-particle{position:absolute;bottom:42%;font-size:14px;opacity:0;animation:introFloat 1.6s ease-in forwards;pointer-events:none;}
+@keyframes introFloat{0%{opacity:0;transform:translateY(0) scale(.6);}15%{opacity:.9;}100%{opacity:0;transform:translateY(-120px) scale(1.1);}}
+
+@keyframes introZoomOut{0%{opacity:1;transform:scale(1);}100%{opacity:0;transform:scale(6);}}
+
+/* ── FULLSCREEN PHOTO VIEWER ── */
+#photo-viewer{position:fixed;inset:0;z-index:400;background:rgba(0,0,0,.97);opacity:0;pointer-events:none;transition:opacity .28s var(--ease-expo);display:flex;align-items:center;justify-content:center;overscroll-behavior:contain;touch-action:none;}
+#photo-viewer.show{opacity:1;pointer-events:all;}
+#pv-track{width:100%;height:100%;display:flex;touch-action:pan-y;}
+.pv-slide{min-width:100%;height:100%;display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;}
+.pv-slide img{max-width:96%;max-height:94%;object-fit:contain;opacity:0;transform:scale(.97);transition:opacity .25s var(--ease-expo),transform .3s var(--ease-expo);}
+.pv-slide img.loaded{opacity:1;transform:scale(1);}
+.pv-slide img.zoomed{transform:scale(2.2);cursor:zoom-out;}
+#pv-back{position:absolute;top:calc(16px + var(--sat));left:16px;z-index:5;width:46px;height:46px;border-radius:50%;background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.22);color:#fff;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;touch-action:manipulation;transition:transform .2s;}
+#pv-back:active{transform:scale(.88);}
+#pv-counter{position:absolute;top:calc(28px + var(--sat));left:50%;transform:translateX(-50%);z-index:5;font-size:11px;letter-spacing:2px;color:rgba(255,255,255,.6);}
+/* Desktop-only arrow buttons (mouse users, no touch swipe) */
+.pv-arrow{position:absolute;top:50%;transform:translateY(-50%);z-index:5;width:44px;height:44px;border-radius:50%;background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.18);color:#fff;font-size:20px;cursor:pointer;display:none;align-items:center;justify-content:center;transition:background .2s,transform .15s;}
+.pv-arrow:hover{background:rgba(0,0,0,.65);}
+.pv-arrow:active{transform:translateY(-50%) scale(.9);}
+#pv-prev{left:16px;}
+#pv-next{right:16px;}
+@media(hover:hover) and (pointer:fine){ .pv-arrow{display:flex;} }
+
+/* ── VIEWER TOOLBAR (download / slideshow) ── */
+#pv-toolbar{position:absolute;top:calc(16px + var(--sat));right:16px;z-index:5;display:flex;gap:8px;}
+.pv-tool-btn{width:44px;height:44px;border-radius:50%;background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.22);color:#fff;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;touch-action:manipulation;transition:transform .2s,background .2s;}
+.pv-tool-btn:active{transform:scale(.88);}
+.pv-tool-btn.on{background:rgba(120,210,255,.32);border-color:rgba(150,220,255,.6);}
+#pv-hint{position:absolute;bottom:calc(20px + var(--sab));left:50%;transform:translateX(-50%);z-index:5;font-size:9px;letter-spacing:2px;color:rgba(255,255,255,.4);text-transform:uppercase;pointer-events:none;}
+
+/* ── VIDEO MODAL ── */
+#video-modal{position:fixed;inset:0;z-index:310;background:rgba(0,0,0,.97);opacity:0;pointer-events:none;transition:opacity .28s var(--ease-expo);display:flex;flex-direction:column;align-items:center;justify-content:center;overscroll-behavior:contain;}
+#video-modal.show{opacity:1;pointer-events:all;}
+#vid-back{position:absolute;top:calc(16px + var(--sat));left:16px;z-index:5;width:50px;height:50px;border-radius:50%;background:rgba(0,0,0,.7);border:1px solid rgba(255,255,255,.25);color:#fff;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;touch-action:manipulation;transition:transform .2s;}
+#vid-back:active{transform:scale(.88);}
+#vid-el{width:100%;height:100%;object-fit:contain;background:#000;max-height:100vh;padding:var(--sat) var(--sar) var(--sab) var(--sal);}
+</style>
+</head>
+<body>
+
+<div id="intro-splash">
+  <div id="intro-shakewrap">
+    <div class="intro-bar b1"></div>
+    <div class="intro-bar b2"></div>
+    <div class="intro-bar b3"></div>
+    <div id="intro-flash"></div>
+    <div id="intro-text">Hii <span class="intro-spark">✦</span> Darling</div>
+    <span class="intro-particle" style="left:44%;animation-delay:.9s;">💜</span>
+    <span class="intro-particle" style="left:52%;animation-delay:1.05s;">✦</span>
+    <span class="intro-particle" style="left:58%;animation-delay:1.2s;">💜</span>
+    <span class="intro-particle" style="left:48%;animation-delay:1.35s;">✦</span>
+  </div>
+</div>
+
+<div id="polaroid-wall">
+  <div id="pw-header"><span>✦ &nbsp; Teri Yaadein &nbsp; ✦</span></div>
+  <div id="pw-scroll">
+    <div id="pw-video-grid"></div>
+    <div id="pw-grid"></div>
+  </div>
+  <div id="pw-size-ctrl">
+    <span class="pw-size-icon">▪</span>
+    <input type="range" id="pw-size-slider" min="80" max="240" value="120" step="1" aria-label="Photo size">
+    <span class="pw-size-icon big">▪</span>
+  </div>
+</div>
+
+<!-- FULLSCREEN PHOTO VIEWER -->
+<div id="photo-viewer">
+  <button id="pv-back" onclick="closeViewer()">←</button>
+  <div id="pv-counter"></div>
+  <div id="pv-toolbar">
+    <button id="pv-play" class="pv-tool-btn" onclick="toggleSlideshow()" title="Slideshow">▶️</button>
+    <button id="pv-download" class="pv-tool-btn" onclick="downloadCurrentPhoto()" title="Download">⬇️</button>
+  </div>
+  <button id="pv-prev" class="pv-arrow" onclick="stopSlideshow();goToSlide(pvIndex-1)">‹</button>
+  <button id="pv-next" class="pv-arrow" onclick="stopSlideshow();goToSlide(pvIndex+1)">›</button>
+  <div id="pv-track"></div>
+  <div id="pv-hint">Double tap · zoom</div>
+</div>
+
+<!-- VIDEO MODAL -->
+<div id="video-modal">
+  <button id="vid-back" onclick="closeVideo()">←</button>
+  <video id="vid-el" controls playsinline preload="metadata"></video>
+</div>
+
+<script>
+/* ─── SAARI PICTURES pic/ folder se attach ki gayi hain ─── */
+const PHOTOS = [
+  'pic/photo_2026-09-12_20-29-06.jpg',
+  'pic/photo_2026-09-12_20-29-14.jpg',
+  'pic/pic1.jpg','pic/pic2.jpg','pic/pic3.jpg','pic/pic4.jpg',
+  'pic/pic5.jpg','pic/pic5.png','pic/pic6.jpg','pic/pic7.jpg',
+  'pic/pic8.jpg','pic/pic9.jpg','pic/pic10.jpg','pic/pic11.jpg',
+  'pic/pic12.jpg','pic/pic13.jpg','pic/pic14.jpg','pic/pic15.jpg',
+  'pic/pic16.jpg','pic/pic17.jpg','pic/pic18.jpg','pic/pic19.jpg',
+  'pic/pic20.jpg','pic/pic21.jpg','pic/pic22.jpg','pic/pic23.jpg',
+  'pic/pic24.jpg','pic/pic25.jpg','pic/pic25.jpeg','pic/pic26.jpg','pic/pic26.jpeg',
+  'pic/pic27.jpg','pic/pic27.jpeg','pic/pic28.jpg','pic/pic28.jpeg',
+  'pic/pic29.jpg','pic/pic29.jpeg','pic/pic30.jpg','pic/pic30.jpeg',
+  'pic/pic31.jpg','pic/pic31.jpeg','pic/pic32.jpg','pic/pic32.jpeg',
+  'pic/pic33.jpg','pic/pic33.jpeg','pic/pic34.jpeg','pic/pic35.jpeg',
+  'pic/pic36.jpeg','pic/pic37.jpeg','pic/pic38.jpeg','pic/pic39.jpeg',
+  'pic/pic40.jpeg','pic/pic45.jpg'
+];
+
+/* ─── SAARE VIDEOS video/ aur pic/ folder se attach kiye gaye hain ─── */
+const VIDEOS = [
+  { src: 'video/video.mp4', label: 'Memories 💜' },
+  { src: 'pic/prisha.mp4', label: 'Prisha Clip 💜' },
+  { src: 'pic/video_2026-09-12_20-29-29.mp4', label: 'Sweet Moments 💜' },
+];
+
+/* ── INTRO SPLASH ── */
+(function(){
+  const splash = document.getElementById('intro-splash');
+  const skipMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (skipMotion) { splash.remove(); return; }
+  document.body.style.overflow = 'hidden';
+  let done = false;
+  function finishIntro(){
+    if (done) return; done = true;
+    splash.classList.add('exit');
+    setTimeout(() => {
+      splash.remove();
+      document.body.style.overflow = '';
+    }, 550);
+  }
+  setTimeout(finishIntro, 2900);
+})();
+
+/* ── BUILD GRID ── */
+const grid = document.getElementById('pw-grid');
+const videoGrid = document.getElementById('pw-video-grid');
+const playIcon = '<svg viewBox="0 0 24 24"><path d="M8 5.5v13l11-6.5z" fill="rgba(255,255,255,.92)"/></svg>';
+
+function buildGallery(){
+  // Video cards
+  VIDEOS.forEach((v, i) => {
+    const vidWrap = document.createElement('div');
+    vidWrap.className = 'pw-video-wrap';
+    const vidCard = document.createElement('div');
+    vidCard.className = 'pw-video-card';
+    vidCard.setAttribute('aria-label', v.label.replace(/[^\w\s]/g, '').trim());
+    vidCard.setAttribute('role', 'button');
+    vidCard.setAttribute('tabindex', '0');
+    const accent = (i % 3) + 1;
+    vidCard.innerHTML = `
+      <div class="pw-video-thumb accent-${accent}">
+        <span class="pw-play-btn">${playIcon}</span>
+      </div>
+      <div class="pw-video-label">${v.label}</div>
+    `;
+    vidCard.addEventListener('click', () => openVideo(v.src));
+    vidCard.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openVideo(v.src); }
+    });
+    vidWrap.appendChild(vidCard);
+    videoGrid.appendChild(vidWrap);
+  });
+
+  // Photo cards (built once, lightweight — no per-item timers)
+  const frag = document.createDocumentFragment();
+  PHOTOS.forEach((src, i) => {
+    const rot = (Math.random() - .5) * 5;
+    const wrap = document.createElement('div');
+    wrap.className = 'pw-photo-m';
+    wrap.style.transform = `rotate(${rot}deg)`;
+
+    const card = document.createElement('div');
+    card.className = 'pw-card-m';
+
+    const tape = document.createElement('div');
+    tape.className = 'pw-tape-m';
+    card.appendChild(tape);
+
+    const box = document.createElement('div');
+    box.className = 'img-box';
+
+    const img = document.createElement('img');
+    img.src = src;                    // native lazy-loading handles when it actually fetches
+    img.alt = `Yaad ${i + 1}`;
+    img.loading = 'lazy';
+    img.decoding = 'async';
+    img.fetchPriority = 'low';
+    img.onload  = () => img.classList.add('loaded');
+    img.onerror = () => { img.classList.add('loaded'); box.style.background = 'rgba(200,180,150,.22)'; };
+    box.appendChild(img);
+    card.appendChild(box);
+
+    card.setAttribute('role', 'button');
+    card.setAttribute('tabindex', '0');
+    card.setAttribute('aria-label', `Open photo ${i + 1}`);
+    card.addEventListener('click', () => openViewer(i));
+    card.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openViewer(i); }
+    });
+
+    wrap.dataset.index = i;
+    wrap.appendChild(card);
+    frag.appendChild(wrap);
+  });
+  grid.appendChild(frag);
+}
+buildGallery();
+
+/* ── SIZE SLIDER (big/small photo grid) ── */
+const sizeSlider = document.getElementById('pw-size-slider');
+const savedSize = localStorage.getItem ? localStorage.getItem('pw-size') : null;
+if (savedSize) {
+  sizeSlider.value = savedSize;
+  document.documentElement.style.setProperty('--pw-size', savedSize + 'px');
+}
+let sizeUpdateFrame = null;
+sizeSlider.addEventListener('input', () => {
+  if (sizeUpdateFrame) return;
+  sizeUpdateFrame = requestAnimationFrame(() => {
+    const value = sizeSlider.value;
+    document.documentElement.style.setProperty('--pw-size', value + 'px');
+    try { localStorage.setItem('pw-size', value); } catch(e){}
+    sizeUpdateFrame = null;
+  });
+});
+
+/* ── SCROLL LOCK ── */
+let savedScrollY = 0;
+function lockBodyScroll(){
+  savedScrollY = window.scrollY;
+  document.body.style.position='fixed'; document.body.style.top=`-${savedScrollY}px`;
+  document.body.style.width='100%'; document.body.style.overflow='hidden';
+}
+function unlockBodyScroll(){
+  document.body.style.position=''; document.body.style.top='';
+  document.body.style.width=''; document.body.style.overflow='';
+  window.scrollTo(0, savedScrollY);
+}
+
+/* ── FULLSCREEN PHOTO VIEWER ── */
+const pvTrack   = document.getElementById('pv-track');
+const pvViewer  = document.getElementById('photo-viewer');
+const pvCounter = document.getElementById('pv-counter');
+let pvIndex = 0;
+let pvBuilt = false;
+let pvDragging = false, pvStartX = 0, pvDeltaX = 0, pvWidth = 0, pvRAF = null;
+
+function buildViewerSlides(){
+  if (pvBuilt) return; pvBuilt = true;
+  const frag = document.createDocumentFragment();
+  PHOTOS.forEach((src, i) => {
+    const slide = document.createElement('div');
+    slide.className = 'pv-slide';
+    const img = document.createElement('img');
+    img.dataset.src = src;   // real src only set when this slide is actually needed
+    img.alt = `Yaad ${i + 1}`;
+    slide.appendChild(img);
+    frag.appendChild(slide);
+  });
+  pvTrack.appendChild(frag);
+}
+
+function loadSlide(i){
+  if (i < 0 || i >= PHOTOS.length) return;
+  const img = pvTrack.children[i].querySelector('img');
+  if (!img.src){
+    img.src = img.dataset.src;
+    img.onload = () => img.classList.add('loaded');
+  } else {
+    img.classList.add('loaded');
+  }
+}
+
+function goToSlide(i, animate = true){
+  const newIndex = Math.max(0, Math.min(PHOTOS.length - 1, i));
+  if (newIndex !== pvIndex) clearZoom();
+  pvIndex = newIndex;
+  pvWidth = pvViewer.clientWidth;
+  pvTrack.style.transition = animate ? 'transform .3s var(--ease-expo)' : 'none';
+  pvTrack.style.transform = `translate3d(${-pvIndex * pvWidth}px,0,0)`;
+  pvCounter.textContent = `${pvIndex + 1} / ${PHOTOS.length}`;
+  document.getElementById('pv-prev').style.visibility = pvIndex === 0 ? 'hidden' : 'visible';
+  document.getElementById('pv-next').style.visibility = pvIndex === PHOTOS.length - 1 ? 'hidden' : 'visible';
+  // only current photo + its two neighbours are ever loaded — keeps it fast at any gallery size
+  loadSlide(pvIndex - 1); loadSlide(pvIndex); loadSlide(pvIndex + 1);
+}
+
+function openViewer(i){
+  buildViewerSlides();
+  lockBodyScroll();
+  pvViewer.classList.add('show');
+  requestAnimationFrame(() => goToSlide(i, false));
+}
+function closeViewer(){
+  pvViewer.classList.remove('show');
+  unlockBodyScroll();
+  stopSlideshow();
+  clearZoom();
+}
+
+/* ── SLIDESHOW (autoplay) ── */
+let slideshowTimer = null;
+const pvPlayBtn = document.getElementById('pv-play');
+function toggleSlideshow(){
+  if (slideshowTimer) stopSlideshow(); else startSlideshow();
+}
+function startSlideshow(){
+  stopSlideshow();
+  pvPlayBtn.textContent = '⏸️'; pvPlayBtn.classList.add('on');
+  slideshowTimer = setInterval(() => {
+    if (pvIndex >= PHOTOS.length - 1) goToSlide(0);
+    else goToSlide(pvIndex + 1);
+  }, 2800);
+}
+function stopSlideshow(){
+  if (slideshowTimer) { clearInterval(slideshowTimer); slideshowTimer = null; }
+  pvPlayBtn.textContent = '▶️'; pvPlayBtn.classList.remove('on');
+}
+
+/* ── DOWNLOAD current photo ── */
+function downloadCurrentPhoto(){
+  const src = PHOTOS[pvIndex];
+  const a = document.createElement('a');
+  a.href = src;
+  a.download = src.split('/').pop() || `photo-${pvIndex + 1}`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+}
+
+/* ── DOUBLE-TAP TO ZOOM ── */
+let lastTapTime = 0, zoomedSlide = null;
+function clearZoom(){
+  if (zoomedSlide) { zoomedSlide.classList.remove('zoomed'); zoomedSlide = null; }
+}
+pvTrack.addEventListener('pointerup', () => {
+  const now = Date.now();
+  if (now - lastTapTime < 300 && Math.abs(pvDeltaX) < 8) {
+    const img = pvTrack.children[pvIndex] && pvTrack.children[pvIndex].querySelector('img');
+    if (img) {
+      if (img.classList.contains('zoomed')) { img.classList.remove('zoomed'); zoomedSlide = null; }
+      else { clearZoom(); img.classList.add('zoomed'); zoomedSlide = img; }
+    }
+  }
+  lastTapTime = now;
+});
+
+/* Pointer Events = one code path for touch, mouse (laptop) and pen */
+pvTrack.addEventListener('pointerdown', e => {
+  stopSlideshow();
+  pvDragging = true; pvStartX = e.clientX; pvDeltaX = 0;
+  pvWidth = pvViewer.clientWidth;
+  pvTrack.style.transition = 'none';
+  pvTrack.setPointerCapture(e.pointerId);
+});
+pvTrack.addEventListener('pointermove', e => {
+  if (!pvDragging) return;
+  pvDeltaX = e.clientX - pvStartX;
+  if (pvRAF) return;
+  pvRAF = requestAnimationFrame(() => {
+    pvTrack.style.transform = `translate3d(${-pvIndex * pvWidth + pvDeltaX}px,0,0)`;
+    pvRAF = null;
+  });
+});
+function endDrag(){
+  if (!pvDragging) return; pvDragging = false;
+  if (pvDeltaX < -60) goToSlide(pvIndex + 1);
+  else if (pvDeltaX > 60) goToSlide(pvIndex - 1);
+  else goToSlide(pvIndex);
+}
+pvTrack.addEventListener('pointerup', endDrag);
+pvTrack.addEventListener('pointercancel', endDrag);
+
+// keyboard support (desktop)
+document.addEventListener('keydown', e => {
+  if (pvViewer.classList.contains('show')) {
+    if (e.key === 'ArrowRight') { stopSlideshow(); goToSlide(pvIndex + 1); }
+    if (e.key === 'ArrowLeft') { stopSlideshow(); goToSlide(pvIndex - 1); }
+    if (e.key === 'Escape') closeViewer();
+    return;
+  }
+  if (e.key === 'Escape' && document.getElementById('video-modal').classList.contains('show')) {
+    closeVideo();
+  }
+});
+
+let resizeTimer = null;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => { if (pvViewer.classList.contains('show')) goToSlide(pvIndex, false); }, 120);
+});
+
+/* ── VIDEO MODAL (har card apna src bhejta hai; ek hi <video> element reuse hota hai) ── */
+function openVideo(src){
+  lockBodyScroll();
+  document.getElementById('video-modal').classList.add('show');
+  const v = document.getElementById('vid-el');
+  v.src = src;
+  v.currentTime = 0;
+  v.play().catch(()=>{});
+}
+function closeVideo(){
+  const v = document.getElementById('vid-el');
+  v.pause(); v.currentTime = 0;
+  v.removeAttribute('src'); v.load();
+  document.getElementById('video-modal').classList.remove('show');
+  unlockBodyScroll();
+}
+</script>
+</body>
+</html>
